@@ -1,0 +1,23 @@
+{
+  "name": "react-form",
+  "version": "0.0.1",
+  "description": "A form component for react",
+  "main": "index.jsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZxBing0066/react-form.git"
+  },
+  "keywords": [
+    "react",
+    "form"
+  ],
+  "author": "ZxBing0066",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ZxBing0066/react-form/issues"
+  },
+  "homepage": "https://github.com/ZxBing0066/react-form#readme"
+}
