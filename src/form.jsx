@@ -2,8 +2,13 @@ import React, { Component } from 'react'
 import each from 'lodash/each'
 
 class Form extends Component {
-    constructor(...args) {
-        super(...args)
+    constructor(props) {
+        super(props)
+        if (this.props.defaultFormData || !this.props.formData) { // uncontrolled
+            this.isControlled = false
+        } else if (this.props.formData) { // controlled
+            this.isControlled = true
+        }
         this.controllerRefs = {}
     }
 
@@ -16,12 +21,30 @@ class Form extends Component {
         };
     }
 
+    componentWillUnmount() {
+        this.controllerRefs = {}
+    }
+
+    componentWillReceiveProps(nextProps) {
+        if (nextProps.formData && !this.isControlled) {
+            console.warn(`You are trying to controll an uncontrolled form, please check you code`)
+        } else if (this.isControlled) {
+            this.serializeArray = nextProps.formData
+        }
+    }
+
     addTrackingController = (name, ref) => {
         if (this.controllerRefs[name]) {
-            console.warn(`There is repeat controller name in this form, please check: repeated controller name is ${name}`)
+            console.warn(`There is repeat controller name in this form, please check: repeated controller name is ${name}, this controller will not be tracking`)
+        } else {
+            this.controllerRefs[name] = ref;
+            console.debug(`Add a ref of ${name}`, this.controllerRefs)
+            if (this.isControlled) {
+                this.props.formData[name] !== undefined && (ref.value = this.props.formData[name])
+            } else {
+                this.props.defaultFormData[name] !== undefined && (ref.value = this.props.defaultFormData[name])
+            }
         }
-        this.controllerRefs[name] = ref;
-        console.debug(`Add a ref of ${name}`, this.controllerRefs)
     }
 
     removeTrackingController = (name) => {
@@ -30,23 +53,25 @@ class Form extends Component {
     }
 
     onChangeInForm = (name, value) => {
+        if (!this.isControlled) {
+            this.controllerRefs[name].value = value
+        }
         this.props.onChange && this.props.onChange(name, value)
-    }
-
-    componentWillUnmount() {
-        this.controllerRefs = {}
     }
 
     // collection form datas like jquery
     get serializeArray() {
+        if (this.isControlled) {
+            return this.props.formData
+        }
         let formData = {}
         each(this.controllerRefs, ref => formData[ref.name] = ref.value)
         return formData
     }
 
     set serializeArray(formData) {
-        each(formData, (value, name) => {
-            this.controllerRefs[name].value = value
+        each(this.controllerRefs, (ref, name) => {
+            ref.value = formData[name]
         })
     }
 
@@ -59,7 +84,8 @@ class Form extends Component {
     }
 
     render() {
-        return <form {...this.props} onChange={() => { }} />
+        let { formData, defaultFormData, ...rest } = this.props;
+        return <form {...rest} onChange={() => { }} />
     }
 
 }

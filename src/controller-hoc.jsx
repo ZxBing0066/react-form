@@ -1,9 +1,12 @@
 import React, { Component } from 'react'
 
-function hoc(WrappedComponent, { onChange = 'onChange', value = 'value', ...rest }) {
+function hoc(WrappedComponent, { onChange = 'onChange', value = 'value', valueFormatter = v => v, ...rest }) {
     class Controller extends Component {
         constructor(props) {
             super(props);
+            this.state = {
+                value: undefined
+            }
         }
 
         componentDidMount() {
@@ -15,7 +18,13 @@ function hoc(WrappedComponent, { onChange = 'onChange', value = 'value', ...rest
         }
 
         get value() {
-            return this.innerRef.value
+            return this.state.value
+        }
+
+        set value(value) {
+            this.setState({
+                value
+            })
         }
 
         get name() {
@@ -27,12 +36,13 @@ function hoc(WrappedComponent, { onChange = 'onChange', value = 'value', ...rest
                 <WrappedComponent
                     {...this.props}
                     ref={_ref => this.innerRef = _ref}
-                    onChange={
-                        value => {
-                            this.context.isInForm && this.props.name && this.context.onChangeInForm(this.props.name, value);
-                            this.props.onChange && this.props.onChange(value)
+                    {...{
+                        [value]: this.state.value,
+                        [onChange]: (...args) => {
+                            this.context.isInForm && this.props.name && this.context.onChangeInForm(this.props.name, ...args);
+                            this.props.onChange && this.props.onChange(...args)
                         }
-                    }
+                    }}
                 />
             )
         }

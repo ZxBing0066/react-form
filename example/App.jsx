@@ -4,21 +4,68 @@ import controllers from '../src/controllers.jsx'
 
 let { Input } = controllers
 
+const unControlledDefaultFormData = {
+    username: 'username',
+    password: 'password'
+}
+
 class App extends Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            controlledFormData: {
+                username: 'username',
+                password: 'password'
+            }
+        }
+    }
+    print = () => {
+        console.log('Form data of uncontrolled form is ', this.unControlledForm.serializeArray)
+
+        console.log('Form data of controlled form is ', this.controlledForm.serializeArray)
+    }
+    onControlledFormChange(name, value) {
+        this.state.controlledFormData[name] = value
+        this.setState({
+            controlledFormData: this.state.controlledFormData
+        })
+    }
     render() {
         return (
-            <Form
-                onChange={(name, value) => {
-                    console.log(name, value, this.form.serializeArray)
-                }}
-                ref={_ref => this.form = _ref}
-            >
-                <Form.Item>
-                    <Input type='text' name='username' />
-                    <Input type='password' name='password' />
-                    <Input />
-                </Form.Item>
-            </Form>
+            <div>
+                <title>uncontrolled form</title>
+                {/* uncontrolled form */}
+                <Form
+                    onChange={(name, value) => {
+                        console.log(name, value)
+                    }}
+                    defaultFormData={unControlledDefaultFormData}
+                    ref={_ref => this.unControlledForm = _ref}
+                >
+                    <Form.Item>
+                        <Input type='text' name='username' />
+                        <Input type='password' name='password' />
+                        <Input />
+                    </Form.Item>
+                </Form>
+                <title>controlled form</title>
+                {/* controlled form */}
+                <Form
+                    onChange={(name, value) => {
+                        console.log(name, value)
+                        this.onControlledFormChange(name, value)
+                    }}
+                    formData={this.state.controlledFormData}
+                    ref={_ref => this.controlledForm = _ref}
+                >
+                    <Form.Item>
+                        <Input type='text' name='username' />
+                        <Input type='password' name='password' />
+                        <Input />
+                    </Form.Item>
+                </Form>
+                <button onClick={this.print}>print form data</button>
+            </div>
         )
     }
 }
