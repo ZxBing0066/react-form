@@ -1,10 +1,9 @@
 import React, { Component } from 'react'
 
-import Form from './src/form.jsx'
-import Item from './src/item.jsx'
-import Controller from './src/controller.jsx'
+import formHoc from './src/form-hoc.jsx'
+import controllerHoc from './src/controller-hoc.jsx'
 
-Form.Item = Item
-Form.Controller = Controller
-
-export default Form
+export {
+    formHoc,
+    controllerHoc
+}

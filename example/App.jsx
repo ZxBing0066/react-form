@@ -1,13 +1,19 @@
 import React, { Component } from 'react'
-import Form from '../index.jsx'
-import controllers from '../src/controllers.jsx'
-
-let { Input } = controllers
+import { formHoc } from '../index.jsx'
+import { Input } from '../src/controllers.jsx'
 
 const unControlledDefaultFormData = {
     username: 'username',
     password: 'password'
 }
+
+const checkMap = {}
+const formMap = {}
+
+let Form = (props) => {
+    return <form {...props} />
+}
+Form = formHoc(Form)
 
 class App extends Component {
     constructor(props) {
@@ -42,11 +48,9 @@ class App extends Component {
                     defaultFormData={unControlledDefaultFormData}
                     ref={_ref => this.unControlledForm = _ref}
                 >
-                    <Form.Item>
-                        <Input type='text' name='username' />
-                        <Input type='password' name='password' />
-                        <Input />
-                    </Form.Item>
+                    <Input type='text' name='username' />
+                    <Input type='password' name='password' />
+                    <Input />
                 </Form>
                 <title>controlled form</title>
                 {/* controlled form */}
@@ -58,11 +62,9 @@ class App extends Component {
                     formData={this.state.controlledFormData}
                     ref={_ref => this.controlledForm = _ref}
                 >
-                    <Form.Item>
-                        <Input type='text' name='username' />
-                        <Input type='password' name='password' />
-                        <Input />
-                    </Form.Item>
+                    <Input type='text' name='username' />
+                    <Input type='password' name='password' />
+                    <Input />
                 </Form>
                 <button onClick={this.print}>print form data</button>
             </div>

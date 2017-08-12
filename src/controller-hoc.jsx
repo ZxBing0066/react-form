@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 
-function hoc(WrappedComponent, { onChange = 'onChange', value = 'value', valueFormatter = v => v, ...rest }) {
+function hoc(WrappedComponent, { bindChange = 'onChange', bindValue = 'value', getter = v => v, setter = v => v, ...rest }) {
     class Controller extends Component {
         constructor(props) {
             super(props);
@@ -37,9 +37,9 @@ function hoc(WrappedComponent, { onChange = 'onChange', value = 'value', valueFo
                     {...this.props}
                     ref={_ref => this.innerRef = _ref}
                     {...{
-                        [value]: this.state.value,
-                        [onChange]: (...args) => {
-                            this.context.isInForm && this.props.name && this.context.onChangeInForm(this.props.name, ...args);
+                        [bindValue]: setter(this.state.value),
+                        [bindChange]: (...args) => {
+                            this.context.isInForm && this.props.name && this.context.onChangeInForm(this.props.name, getter(...args));
                             this.props.onChange && this.props.onChange(...args)
                         }
                     }}
