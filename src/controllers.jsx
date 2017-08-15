@@ -22,4 +22,9 @@ class Select extends Component {
 }
 Select = controllerHoc(Select, { defaultValue: '' });
 
-export { Input, Select };
+let Checkbox = props => {
+    return <input type="checkbox" {...props} />;
+};
+Checkbox = controllerHoc(Checkbox, { bindValue: 'checked', defaultValue: false, getter: e => e.target.checked });
+
+export { Input, Select, Checkbox };

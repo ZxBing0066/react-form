@@ -1,30 +1,7 @@
 import React, { Component } from 'react';
 import { formHoc, itemHoc } from '../index.jsx';
-import { Input, Select } from '../src/controllers.jsx';
+import { Input, Select, Checkbox } from '../src/controllers.jsx';
 import { each } from 'lodash';
-
-const unControlledDefaultFormData = {
-    username: 'username',
-    password: 'password',
-    username2: 'username2',
-    password2: 'password2'
-};
-
-const checkMap = {
-    username: v => v && v.length > 5,
-    password: v => v && v.length > 6,
-    username2: v => {
-        if (!v) {
-            return 'Please input the username2';
-        }
-        if (v.length < 6) {
-            return 'Input lenght should at least 6';
-        }
-        return true;
-    },
-    password2: v => v && v.length > 6
-};
-const formMap = {};
 
 let Form = props => {
     return <form {...props} />;
@@ -34,7 +11,6 @@ Form = formHoc(Form);
 let Item = ({ label, children, help, ...rest }) => {
     let helpText = '';
     each(help, _help => {
-        console.log(helpText, _help);
         _help && (helpText += _help);
     });
     return (
@@ -52,45 +28,70 @@ let Item = ({ label, children, help, ...rest }) => {
 
 Item = itemHoc(Item);
 
+const defaultFormData = {
+    username: 'username',
+    password: 'password',
+    username2: 'username2',
+    password2: 'password2',
+    age: 3
+};
+
+const checkMap = {
+    username: v => v && v.length > 5,
+    password: v => v && v.length > 6,
+    username2: v => {
+        if (!v) {
+            return 'Please input the username2';
+        }
+        if (v.length < 6) {
+            return 'Input lenght should at least 6';
+        }
+        return true;
+    },
+    password2: v => v && v.length > 6,
+    required_input: (v, currentFormData) => {
+        if (currentFormData.is_required && (!v || !v.length)) {
+            return 'Input is required';
+        }
+        return true;
+    }
+};
+
 class App extends Component {
     constructor(props) {
         super(props);
-        this.state = {
-            controlledFormData: {
-                username: 'username',
-                password: 'password'
-            }
-        };
     }
+    onChange = (name, value, currentFormData) => {
+        console.log(name, value, currentFormData);
+    };
+    loadFormData = () => {
+        const formData = {
+            username: 'user',
+            password: '1234',
+            username2: 'user2',
+            password2: '12345',
+            age: '3'
+        };
+        this.form.setFormData(formData);
+    };
     print = () => {
-        console.log('Form data of uncontrolled form is ', this.unControlledForm.serializeArray);
-
-        console.log('Form data of controlled form is ', this.controlledForm.serializeArray);
+        console.log('Form data is ', this.form.serializeArray);
     };
     submit = () => {
-        if (this.unControlledForm.isValid) {
-            console.log('The uncontrolled form check pass, success');
+        if (this.form.isValid) {
+            console.log('The form check pass, success');
         } else {
-            console.log('The uncontrolled form check error, please check');
+            console.log('The form check error, please check');
         }
     };
-    onControlledFormChange(name, value) {
-        this.state.controlledFormData[name] = value;
-        this.setState({
-            controlledFormData: this.state.controlledFormData
-        });
-    }
     render() {
         return (
             <div>
-                <title>uncontrolled form</title>
-                {/* uncontrolled form */}
+                <title>form</title>
                 <Form
-                    onChange={(name, value) => {
-                        console.log(name, value);
-                    }}
-                    defaultFormData={unControlledDefaultFormData}
-                    ref={_ref => (this.unControlledForm = _ref)}
+                    onChange={this.onChange}
+                    defaultFormData={defaultFormData}
+                    ref={_ref => (this.form = _ref)}
                     checkMap={checkMap}
                     autoCheck
                 >
@@ -105,30 +106,20 @@ class App extends Component {
                     </Select>
                     <Item>
                         <Input type="text" name="username2" />
+                        <br />
                         <Input type="password" name="password2" />
                     </Item>
-                    <input value="123" defaultValue="2323" />
+                    <Item>
+                        <Input name="required_input" />
+                    </Item>
+                    <Checkbox name="is_required" />
+                    <Input type="text" name="no_default_value" />
                 </Form>
-                <title>controlled form</title>
-                {/* controlled form */}
-                <Form
-                    onChange={(name, value) => {
-                        console.log(name, value);
-                        this.onControlledFormChange(name, value);
-                    }}
-                    formData={this.state.controlledFormData}
-                    ref={_ref => (this.controlledForm = _ref)}
-                    autoCheck
-                >
-                    <Input type="text" name="username" />
-                    <Input type="password" name="password" />
-                    <input />
-                </Form>
+                <button onClick={this.loadFormData}>load form data</button>
                 <button onClick={this.print}>print form data</button>
                 <button onClick={this.submit}>check form data</button>
             </div>
         );
     }
 }
-
 export default App;

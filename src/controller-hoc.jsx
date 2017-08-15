@@ -1,28 +1,35 @@
 import React, { Component } from 'react';
 
 function hoc(WrappedComponent, options = {}) {
-    let { bindChange = 'onChange', bindValue = 'value', getter = v => v, setter = v => v, defaultValue, ...rest } = options;
+    let { bindChange = 'onChange', bindValue = 'value', getter = v => v, setter = v => v, defaultValue } = options;
+
     class Controller extends Component {
         constructor(props) {
             super(props);
+            // init the WrappedComponent with default value
             this.state = {
                 value: defaultValue
             };
         }
 
         componentDidMount() {
-            // tell form to tracking this controller
-            this.context.isInForm && this.props.name && this.context.addTrackingController(this.props.name, this);
+            if (!this.context.isInForm) {
+                console.error(`The controller need to place in a valid form`);
+            }
+            if (!this.props.name) {
+                console.error('The controller need a unique name in the form');
+            }
+            // hack when the init value of WrappedComponent is not correct
             if (this.innerRef && this.innerRef.getInitValue) {
                 let initValue = this.innerRef.getInitValue();
-                this.setState({
-                    value: initValue
-                });
+                this.value = initValue;
             }
+            // tell form to tracking this controller
+            this.context.addTrackingController(this.name, this);
         }
 
         componentWillUnmount() {
-            this.context.isInForm && this.props.name && this.context.removeTrackingController(this.props.name);
+            this.context.removeTrackingController(this.name);
         }
 
         get value() {
@@ -41,7 +48,6 @@ function hoc(WrappedComponent, options = {}) {
         }
 
         check() {
-            if (!this.context.isInForm) return true;
             this.context.checkController(this.props.name);
         }
 
@@ -55,7 +61,7 @@ function hoc(WrappedComponent, options = {}) {
                     {...{
                         [bindValue]: setter(this.state.value),
                         [bindChange]: (...args) => {
-                            this.context.isInForm && this.props.name && this.context.onChangeInForm(this.props.name, getter(...args));
+                            this.context.onControllerChange(this.props.name, getter(...args));
                             this.props.onChange && this.props.onChange(...args);
                         }
                     }}
@@ -68,7 +74,7 @@ function hoc(WrappedComponent, options = {}) {
         isInForm: React.PropTypes.bool,
         addTrackingController: React.PropTypes.func,
         removeTrackingController: React.PropTypes.func,
-        onChangeInForm: React.PropTypes.func,
+        onControllerChange: React.PropTypes.func,
         checkController: React.PropTypes.func
     };
 

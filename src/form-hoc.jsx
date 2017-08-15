@@ -6,18 +6,6 @@ function hoc(WrapperComponent) {
         constructor(props) {
             super(props);
             this.controllerRefs = {};
-            if (this.props.formData) {
-                // controlled
-                if (this.props.defaultFormData) {
-                    console.error('You can only use one of the formData & defaultFormData, for the controlled or uncontrolled form');
-                }
-                this.isControlled = true;
-                this.formData = this.props.formData;
-            } else {
-                // uncontrolled
-                this.isControlled = false;
-                this.formData = extend({}, this.props.defaultFormData); // cache the formData
-            }
         }
 
         getChildContext() {
@@ -25,39 +13,31 @@ function hoc(WrapperComponent) {
                 isInForm: true,
                 addTrackingController: this.addTrackingController,
                 removeTrackingController: this.removeTrackingController,
-                onChangeInForm: this.onChangeInForm,
+                onControllerChange: this.onControllerChange,
                 checkController: this.checkController
             };
         }
 
-        componentWillUnmount() {
+        componentWillUnmount = () => {
             // clear the refs
             this.controllerRefs = {};
-        }
-
-        componentWillReceiveProps(nextProps) {
-            if (nextProps.formData && !this.isControlled) {
-                console.warn(`You are trying to controll an uncontrolled form, please check you code`);
-            } else if (this.isControlled) {
-                // update controlled form
-                this.formData = this.serializeArray = nextProps.formData;
-            }
-        }
+        };
 
         // tell form to tracking this controller
         addTrackingController = (name, ref, itemRef) => {
             if (this.controllerRefs[name]) {
-                console.error(`There is repeat controller name in this form, please check: repeated controller name is ${name}, this controller will not be tracking`);
+                console.error(
+                    `There is repeat controller name in this form, please check: repeated controller name is ${name}, this controller will not be tracking`
+                );
             } else {
                 this.controllerRefs[name] = {
                     ref,
                     itemRef
                 };
-                console.debug(`Add a ref of ${name}`, this.controllerRefs);
-                if (this.isControlled) {
-                    this.props.formData[name] !== undefined && (ref.value = this.props.formData[name]);
-                } else if (this.props.defaultFormData) {
-                    this.props.defaultFormData[name] !== undefined && (ref.value = this.props.defaultFormData[name]);
+                // init the controller with defaultFormData
+                let defaultFormData = this.props.defaultFormData;
+                if (defaultFormData.hasOwnProperty(name)) {
+                    ref.value = defaultFormData[name];
                 }
             }
         };
@@ -65,33 +45,31 @@ function hoc(WrapperComponent) {
         // remove the controller tracking
         removeTrackingController = name => {
             delete this.controllerRefs[name];
-            console.debug(`Remove a ref of controller ${name}`, this.controllerRefs);
         };
 
         // the controller changed
-        onChangeInForm = (name, value) => {
-            if (!this.isControlled) {
-                this.setControllerValue(name, value);
+        onControllerChange = (name, value) => {
+            let currentFormData = this.formData;
+            if (isFunction(this.props.setMap[name])) {
+                value = this.props.setMap[name](value, currentFormData);
             }
-            this.props.onChange && this.props.onChange(name, value);
+            this.setControllerValue(name, value);
+            this.props.onChange && this.props.onChange(name, value, currentFormData);
         };
 
         // collection form datas like jquery
         get serializeArray() {
-            if (this.isControlled) {
-                return this.props.formData;
-            }
             let formData = {};
             each(this.controllerRefs, ({ ref }) => (formData[ref.name] = ref.value));
             return formData;
         }
 
+        get formData() {
+            return this.serializeArray;
+        }
+
         // set the form data
         set serializeArray(formData) {
-            if (this.isControlled) {
-                console.error('This form is controlled, to set the form data please just update the props of formData');
-                return;
-            }
             each(this.controllerRefs, ({ ref }, name) => {
                 ref.value = formData[name];
             });
@@ -100,17 +78,21 @@ function hoc(WrapperComponent) {
             }
         }
 
+        set formData(formData) {
+            this.serializeArray = formData;
+        }
+
+        setFormData = formData => {
+            this.serializeArray = formData;
+        };
+
         // get the value of controller
         getControllerValue = name => {
             if (!this.controllerRefs[name]) {
                 console.error(`There is no controller named ${name} in this form`);
                 return undefined;
             }
-            if (this.isControlled) {
-                return this.props.formData[name];
-            } else {
-                return this.controllerRefs[name].ref.value;
-            }
+            return this.controllerRefs[name].ref.value;
         };
 
         // set the value of the controller
@@ -122,18 +104,22 @@ function hoc(WrapperComponent) {
             this.controllerRefs[name].ref.value = value;
             if (this.props.autoCheck) {
                 // auto check the changed controller
-                this.checkController(name);
+                this.check();
             }
         }
 
         // check all controllers and return the result of check
         check() {
-            let checkResultMap = mapObject(this.controllerRefs, (ref, name) => this.checkController(name));
+            // cache
+            let currentFormData = this.formData;
+            let checkResultMap = mapObject(this.controllerRefs, (ref, name) =>
+                this.checkController(name, currentFormData)
+            );
             return checkResultMap;
         }
 
         // check the controller value
-        checkController = name => {
+        checkController = (name, currentFormData) => {
             const { checkMap } = this.props;
             let result = (() => {
                 // no valid check map
@@ -146,9 +132,12 @@ function hoc(WrapperComponent) {
                     console.warn(`The check method of ${name} is not a function`);
                     return true;
                 }
+                if (!currentFormData) {
+                    currentFormData = this.formData;
+                }
                 let value = this.getControllerValue(name);
                 // get the check result
-                return check(value);
+                return check(value, currentFormData);
             })();
             let itemRef = this.controllerRefs[name].itemRef;
             // if in item
@@ -165,7 +154,7 @@ function hoc(WrapperComponent) {
         }
 
         render() {
-            let { formData, defaultFormData, checkMap, autoCheck, ...rest } = this.props;
+            let { defaultFormData, checkMap, setMap, autoCheck, ...rest } = this.props;
             return <WrapperComponent {...rest} onChange={() => {}} />;
         }
     }
@@ -174,12 +163,15 @@ function hoc(WrapperComponent) {
         isInForm: React.PropTypes.bool,
         addTrackingController: React.PropTypes.func,
         removeTrackingController: React.PropTypes.func,
-        onChangeInForm: React.PropTypes.func,
+        onControllerChange: React.PropTypes.func,
         checkController: React.PropTypes.func
     };
 
     Form.defaultProps = {
-        checkMap: {}
+        defaultFormData: {},
+        checkMap: {},
+        setMap: {},
+        autoCheck: false
     };
     return Form;
 }
