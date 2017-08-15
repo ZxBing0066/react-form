@@ -101,7 +101,7 @@ function hoc(WrapperComponent) {
         }
 
         // get the value of controller
-        getControllerValue(name) {
+        getControllerValue = name => {
             if (!this.controllerRefs[name]) {
                 console.error(`There is no controller named ${name} in this form`);
                 return undefined;
@@ -111,7 +111,7 @@ function hoc(WrapperComponent) {
             } else {
                 return this.controllerRefs[name].ref.value;
             }
-        }
+        };
 
         // set the value of the controller
         setControllerValue(name, value) {
@@ -135,7 +135,7 @@ function hoc(WrapperComponent) {
         // check the controller value
         checkController = name => {
             const { checkMap } = this.props;
-            let result = (function() {
+            let result = (() => {
                 // no valid check map
                 if (!isObject(checkMap)) return true;
                 const check = checkMap[name];
