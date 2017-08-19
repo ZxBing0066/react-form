@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
 function hoc(WrappedComponent, options = {}) {
     let { bindChange = 'onChange', bindValue = 'value', getter = v => v, setter = v => v, defaultValue } = options;
@@ -11,7 +12,10 @@ function hoc(WrappedComponent, options = {}) {
                 value: defaultValue
             };
         }
-
+        static propTypes = {
+            name: PropTypes.string.isRequired,
+            onChange: PropTypes.func
+        };
         componentDidMount() {
             if (!this.context.isInForm) {
                 console.error(`The controller need to place in a valid form`);
@@ -37,7 +41,8 @@ function hoc(WrappedComponent, options = {}) {
         }
 
         set value(value) {
-            this.state.value = value;
+            let state = this.state;
+            state.value = value;
             this.setState({
                 value
             });
@@ -71,11 +76,11 @@ function hoc(WrappedComponent, options = {}) {
     }
 
     Controller.contextTypes = {
-        isInForm: React.PropTypes.bool,
-        addTrackingController: React.PropTypes.func,
-        removeTrackingController: React.PropTypes.func,
-        onControllerChange: React.PropTypes.func,
-        checkController: React.PropTypes.func
+        isInForm: PropTypes.bool,
+        addTrackingController: PropTypes.func,
+        removeTrackingController: PropTypes.func,
+        onControllerChange: PropTypes.func,
+        checkController: PropTypes.func
     };
 
     return Controller;

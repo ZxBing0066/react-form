@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { formHoc, itemHoc } from '../index.jsx';
 import { Input, Select, Checkbox } from '../src/controllers.jsx';
 import { each } from 'lodash';
@@ -24,6 +25,12 @@ let Item = ({ label, children, help, ...rest }) => {
             </span>
         </div>
     );
+};
+
+Item.propTypes = {
+    label: PropTypes.node,
+    children: PropTypes.node,
+    help: PropTypes.object
 };
 
 Item = itemHoc(Item);

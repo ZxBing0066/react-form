@@ -1,13 +1,13 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 
 import controllerHoc from './controller-hoc.jsx';
 
-let Input = ({ onChange, ...rest }) => {
-    return <input {...rest} onChange={e => onChange(e.target.value)} />;
+let Input = props => {
+    return <input {...props} />;
 };
-Input = controllerHoc(Input, { defaultValue: '' });
+Input = controllerHoc(Input, { defaultValue: '', getter: e => e.target.value });
 
-class Select extends Component {
+class SelectComponent extends PureComponent {
     // hack when the init value of select is not correct
     // when there is no option equal to the default value but the select will auto select the first options with out call the onChange handle
     // this will not call the onChange in form
@@ -16,11 +16,10 @@ class Select extends Component {
     };
 
     render() {
-        let { onChange, ...rest } = this.props;
-        return <select {...rest} ref={_ref => (this.ref = _ref)} onChange={e => onChange(e.target.value)} />;
+        return <select {...this.props} ref={_ref => (this.ref = _ref)} />;
     }
 }
-Select = controllerHoc(Select, { defaultValue: '' });
+let Select = controllerHoc(SelectComponent, { defaultValue: '', getter: e => e.target.value });
 
 let Checkbox = props => {
     return <input type="checkbox" {...props} />;

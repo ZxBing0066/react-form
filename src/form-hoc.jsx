@@ -1,5 +1,10 @@
 import React, { Component } from 'react';
-import { each, isObject, isFunction, findKey, map, mapObject, extend } from 'lodash';
+import PropTypes from 'prop-types';
+import each from 'lodash/each';
+import isObject from 'lodash/isObject';
+import isFunction from 'lodash/isFunction';
+import findKey from 'lodash/findKey';
+import mapValues from 'lodash/mapValues';
 
 function hoc(WrapperComponent) {
     class Form extends Component {
@@ -8,6 +13,15 @@ function hoc(WrapperComponent) {
             this.controllerRefs = {};
         }
 
+        static propTypes = {
+            defaultFormData: PropTypes.object,
+            checkMap: PropTypes.object,
+            setMap: PropTypes.object,
+            defaultHelpMap: PropTypes.object,
+            autoCheck: PropTypes.bool,
+            autoCheckController: PropTypes.bool,
+            onChange: PropTypes.func
+        };
         getChildContext() {
             return {
                 isInForm: true,
@@ -126,7 +140,7 @@ function hoc(WrapperComponent) {
         check() {
             // cache
             let currentFormData = this.formData;
-            let checkResultMap = mapObject(this.controllerRefs, (ref, name) =>
+            let checkResultMap = mapValues(this.controllerRefs, (ref, name) =>
                 this.checkController(name, currentFormData)
             );
             return checkResultMap;
@@ -182,11 +196,11 @@ function hoc(WrapperComponent) {
     }
 
     Form.childContextTypes = {
-        isInForm: React.PropTypes.bool,
-        addTrackingController: React.PropTypes.func,
-        removeTrackingController: React.PropTypes.func,
-        onControllerChange: React.PropTypes.func,
-        checkController: React.PropTypes.func
+        isInForm: PropTypes.bool,
+        addTrackingController: PropTypes.func,
+        removeTrackingController: PropTypes.func,
+        onControllerChange: PropTypes.func,
+        checkController: PropTypes.func
     };
 
     Form.defaultProps = {

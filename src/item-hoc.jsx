@@ -1,12 +1,13 @@
-import React, { Component } from 'react'
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
-function hoc(WrapperComponent, options) {
+function hoc(WrapperComponent) {
     class Item extends Component {
         constructor(...args) {
-            super(...args)
+            super(...args);
             this.state = {
                 help: {}
-            }
+            };
         }
 
         getChildContext() {
@@ -16,30 +17,30 @@ function hoc(WrapperComponent, options) {
         }
 
         addTrackingController = (name, ref) => {
-            this.context.isInForm && this.context.addTrackingController(name, ref, this)
-        }
+            this.context.isInForm && this.context.addTrackingController(name, ref, this);
+        };
 
         setHelp = (name, helpForName) => {
-            let help = this.state.help
-            help[name] = helpForName
-            this.setState({ help })
-        }
+            let help = this.state.help;
+            help[name] = helpForName;
+            this.setState({ help });
+        };
 
         render() {
-            return <WrapperComponent help={this.state.help} {...this.props} />
+            return <WrapperComponent help={this.state.help} {...this.props} />;
         }
     }
 
     Item.childContextTypes = {
-        addTrackingController: React.PropTypes.func
+        addTrackingController: PropTypes.func
     };
 
     Item.contextTypes = {
-        isInForm: React.PropTypes.bool,
-        addTrackingController: React.PropTypes.func
+        isInForm: PropTypes.bool,
+        addTrackingController: PropTypes.func
     };
 
-    return Item
+    return Item;
 }
 
-export default hoc
+export default hoc;
