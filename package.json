@@ -5,6 +5,7 @@
   "main": "index.jsx",
   "scripts": {
     "build": "webpack",
+    "build-dev": "webpack --config ./example/webpack.dev.js",
     "watch": "webpack --watch --config ./example/webpack.config.js",
     "dev": "webpack-dev-server --open",
     "example-dev": "webpack-dev-server --open --config ./example/webpack.config.js",
