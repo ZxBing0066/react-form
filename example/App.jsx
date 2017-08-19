@@ -36,6 +36,10 @@ const defaultFormData = {
     age: 3
 };
 
+const defaultHelpMap = {
+    username2: 'please input you username'
+};
+
 const checkMap = {
     username: v => v && v.length > 5,
     password: v => v && v.length > 6,
@@ -91,9 +95,10 @@ class App extends Component {
                 <Form
                     onChange={this.onChange}
                     defaultFormData={defaultFormData}
-                    ref={_ref => (this.form = _ref)}
+                    defaultHelpMap={defaultHelpMap}
                     checkMap={checkMap}
-                    autoCheck
+                    ref={_ref => (this.form = _ref)}
+                    autoCheckController
                 >
                     <Input type="text" name="username" />
                     <Input type="password" name="password" />

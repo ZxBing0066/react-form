@@ -39,6 +39,13 @@ function hoc(WrapperComponent) {
                 if (defaultFormData.hasOwnProperty(name)) {
                     ref.value = defaultFormData[name];
                 }
+                // init the help with defaultHelpMap
+                let defaultHelpMap = this.props.defaultHelpMap;
+                console.log(defaultHelpMap, defaultHelpMap.hasOwnProperty(name), itemRef);
+
+                if (defaultHelpMap.hasOwnProperty(name)) {
+                    itemRef && itemRef.setHelp(name, defaultHelpMap[name]);
+                }
             }
         };
 
@@ -65,6 +72,10 @@ function hoc(WrapperComponent) {
         }
 
         get formData() {
+            return this.serializeArray;
+        }
+
+        getFormData() {
             return this.serializeArray;
         }
 
@@ -103,8 +114,11 @@ function hoc(WrapperComponent) {
             }
             this.controllerRefs[name].ref.value = value;
             if (this.props.autoCheck) {
-                // auto check the changed controller
+                // auto check all controller
                 this.check();
+            } else if (this.props.autoCheckController) {
+                // auto check the changed controller
+                this.checkController(name);
             }
         }
 
@@ -154,7 +168,15 @@ function hoc(WrapperComponent) {
         }
 
         render() {
-            let { defaultFormData, checkMap, setMap, autoCheck, ...rest } = this.props;
+            let {
+                defaultFormData,
+                checkMap,
+                setMap,
+                defaultHelpMap,
+                autoCheck,
+                autoCheckController,
+                ...rest
+            } = this.props;
             return <WrapperComponent {...rest} onChange={() => {}} />;
         }
     }
@@ -171,7 +193,9 @@ function hoc(WrapperComponent) {
         defaultFormData: {},
         checkMap: {},
         setMap: {},
-        autoCheck: false
+        defaultHelpMap: {},
+        autoCheck: false,
+        autoCheckController: false
     };
     return Form;
 }
