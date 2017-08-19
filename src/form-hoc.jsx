@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { each, isObject, isFunction, findKey, map, mapObject, extend } from 'underscore';
+import { each, isObject, isFunction, findKey, map, mapObject, extend } from 'lodash';
 
 function hoc(WrapperComponent) {
     class Form extends Component {
