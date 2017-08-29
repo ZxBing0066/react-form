@@ -7,13 +7,14 @@ function hoc(WrappedComponent, options = {}) {
     class Controller extends Component {
         constructor(props) {
             super(props);
-            // init the WrappedComponent with default value
+            // init the WrappedComponent with default value or with defaultProps
             this.state = {
-                value: defaultValue
+                value: props.defaultValue === undefined ? defaultValue : props.defaultValue
             };
         }
         static propTypes = {
             name: PropTypes.string.isRequired,
+            defaultValue: PropTypes.any,
             onChange: PropTypes.func
         };
         componentDidMount() {
