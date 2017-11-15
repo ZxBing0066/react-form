@@ -20,7 +20,9 @@ function hoc(WrapperComponent) {
             defaultHelpMap: PropTypes.object,
             autoCheck: PropTypes.bool,
             autoCheckController: PropTypes.bool,
-            onChange: PropTypes.func
+            onChange: PropTypes.func,
+            name: PropTypes.string,
+            onOtherFormChange: PropTypes.func
         };
         getChildContext() {
             return {
@@ -32,9 +34,18 @@ function hoc(WrapperComponent) {
             };
         }
 
+        componentDidMount = () => {
+            if (this.context.isInFormGroup) {
+                this.context.addTrackingForm(this.props.name, this);
+            }
+        };
+
         componentWillUnmount = () => {
             // clear the refs
             this.controllerRefs = {};
+            if (this.context.isInFormGroup) {
+                this.context.removeTrackingForm(this.props.name, this);
+            }
         };
 
         // tell form to tracking this controller
@@ -55,7 +66,6 @@ function hoc(WrapperComponent) {
                 }
                 // init the help with defaultHelpMap
                 let defaultHelpMap = this.props.defaultHelpMap;
-                console.log(defaultHelpMap, defaultHelpMap.hasOwnProperty(name), itemRef);
 
                 if (defaultHelpMap.hasOwnProperty(name)) {
                     itemRef && itemRef.setHelp(name, defaultHelpMap[name]);
@@ -70,12 +80,20 @@ function hoc(WrapperComponent) {
 
         // the controller changed
         onControllerChange = (name, value) => {
-            let currentFormData = this.formData;
+            let oldFormData = this.formData;
             if (isFunction(this.props.setMap[name])) {
-                value = this.props.setMap[name](value, currentFormData);
+                value = this.props.setMap[name](value, oldFormData);
             }
             this.setControllerValue(name, value);
-            this.props.onChange && this.props.onChange(name, value, currentFormData);
+            let newFormData = this.formData;
+            this.props.onChange && this.props.onChange(name, value, newFormData, oldFormData);
+            if (this.context.isInFormGroup && this.props.name) {
+                this.context.onFormChange(this.props.name, newFormData, oldFormData);
+            }
+        };
+
+        onOtherFormChange = (...args) => {
+            this.props.onOtherFormChange(...args);
         };
 
         // collection form datas like jquery
@@ -93,6 +111,13 @@ function hoc(WrapperComponent) {
             return this.serializeArray;
         }
 
+        getOtherFormData(formName) {
+            if (this.context.isInFormGroup) {
+                return this.context.getFormData(formName);
+            } else {
+                console.warn("The form is not in a form group, so it can't get other form's data");
+            }
+        }
         // set the form data
         set serializeArray(formData) {
             each(this.controllerRefs, ({ ref }, name) => {
@@ -180,6 +205,9 @@ function hoc(WrapperComponent) {
             let checkResultMap = this.check();
             return !findKey(checkResultMap, result => result !== true);
         }
+        getIsValid() {
+            return this.isValid;
+        }
 
         render() {
             let {
@@ -189,6 +217,7 @@ function hoc(WrapperComponent) {
                 defaultHelpMap,
                 autoCheck,
                 autoCheckController,
+                onOtherFormChange,
                 ...rest
             } = this.props;
             return <WrapperComponent {...rest} onChange={() => {}} />;
@@ -202,14 +231,22 @@ function hoc(WrapperComponent) {
         onControllerChange: PropTypes.func,
         checkController: PropTypes.func
     };
-
+    Form.contextTypes = {
+        isInFormGroup: PropTypes.bool,
+        onFormChange: PropTypes.func,
+        addTrackingForm: PropTypes.func,
+        removeTrackingForm: PropTypes.func,
+        getFormData: PropTypes.func
+    };
     Form.defaultProps = {
         defaultFormData: {},
         checkMap: {},
         setMap: {},
         defaultHelpMap: {},
+        onChange: () => {},
         autoCheck: false,
-        autoCheckController: false
+        autoCheckController: false,
+        onOtherFormChange: () => {}
     };
     return Form;
 }
