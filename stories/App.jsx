@@ -1,39 +1,6 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import { formHoc, itemHoc } from '../index.jsx';
-import { Input, Select, Checkbox } from '../src/controllers.jsx';
-import { each } from 'lodash';
-
-let Form = props => {
-    return <form {...props} />;
-};
-Form = formHoc(Form);
-
-let Item = ({ label, children, help, ...rest }) => {
-    let helpText = '';
-    each(help, _help => {
-        _help && (helpText += _help);
-    });
-    return (
-        <div {...rest}>
-            <label>
-                {label}
-            </label>
-            {children}
-            <span>
-                {helpText}
-            </span>
-        </div>
-    );
-};
-
-Item.propTypes = {
-    label: PropTypes.node,
-    children: PropTypes.node,
-    help: PropTypes.object
-};
-
-Item = itemHoc(Item);
+import Form, { Item } from './Form';
+import { Input, Select, Checkbox } from '../src/controllers';
 
 const defaultFormData = {
     username: 'username',
@@ -110,11 +77,11 @@ class App extends Component {
                     <Input type="text" name="username" />
                     <Input type="password" name="password" />
                     <Select name="age">
-                        {[1, 2, 3, 4, 5].map(v =>
+                        {[1, 2, 3, 4, 5].map(v => (
                             <option key={v} value={v}>
                                 {v}
                             </option>
-                        )}
+                        ))}
                     </Select>
                     <Item>
                         <Input type="text" name="username2" />
