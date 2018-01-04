@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import Form, { Item } from './Form';
-import { Input, Select, Checkbox } from '../src/controllers';
+import { Input, Select, Checkbox } from './controllers';
 
 const defaultFormData = {
     username: 'username',
@@ -53,7 +53,7 @@ class App extends Component {
         this.form.setFormData(formData);
     };
     print = () => {
-        console.log('Form data is ', this.form.serializeArray);
+        console.log('Form data is ', this.form.getFormData());
     };
     submit = () => {
         if (this.form.isValid) {

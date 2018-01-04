@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 
-import controllerHoc from './controller-hoc.jsx';
+import controllerHoc from '../src/controller-hoc.jsx';
 
 let Input = props => {
     return <input {...props} />;
@@ -26,4 +26,13 @@ let Checkbox = props => {
 };
 Checkbox = controllerHoc(Checkbox, { bindValue: 'checked', defaultValue: false, getter: e => e.target.checked });
 
-export { Input, Select, Checkbox };
+let IPInput = props => {
+    return <input {...props} type="text" />;
+};
+IPInput = controllerHoc(IPInput, {
+    defaultValue: [],
+    getter: e => (e.target.value || '').split(';'),
+    setter: v => v.join(';')
+});
+
+export { Input, Select, Checkbox, IPInput };

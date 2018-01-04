@@ -13,13 +13,8 @@
         },
         "sourceType": "module"
     },
-    "plugins": [
-        "react"
-    ],
-    "extends": [
-        "eslint:recommended",
-        "plugin:react/recommended"
-    ],
+    "plugins": ["react"],
+    "extends": ["eslint:recommended", "plugin:react/recommended"],
     "parser": "babel-eslint",
     "rules": {
         "no-const-assign": "warn",
@@ -29,6 +24,6 @@
         "no-unused-vars": "warn",
         "constructor-super": "warn",
         "valid-typeof": "warn",
-        "no-console": "warn"
+        "no-console": ["warn", { "allow": ["warn", "error"] }]
     }
 }

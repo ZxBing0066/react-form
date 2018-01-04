@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 function hoc(WrapperComponent) {
-    class Item extends Component {
+    class Item extends PureComponent {
         constructor(...args) {
             super(...args);
             this.state = {
@@ -21,9 +21,24 @@ function hoc(WrapperComponent) {
         };
 
         setHelp = (name, helpForName) => {
-            let help = this.state.help;
-            help[name] = helpForName;
-            this.setState({ help });
+            const { help } = this.state;
+            if (Object.hasOwnProperty.call(help, name) && help[name] === helpForName) return;
+            this.setState({
+                help: {
+                    ...help,
+                    [name]: helpForName
+                }
+            });
+        };
+        removeHelp = name => {
+            const { help } = this.state;
+            if (!Object.hasOwnProperty.call(help, name)) return;
+            delete help[name];
+            this.setState({
+                help: {
+                    ...help
+                }
+            });
         };
 
         render() {
