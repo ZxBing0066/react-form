@@ -1,117 +1,136 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import debounce from 'lodash/debounce';
 import isFunction from 'lodash/isFunction';
+import { EVENTS } from './dispatcher';
 
 function hoc(WrappedComponent, options = {}) {
-    let { bindChange = 'onChange', bindValue = 'value', getter = v => v, setter = v => v, defaultValue } = options;
+    const {
+        bindChange = 'onChange',
+        bindValue = 'value',
+        getter = v => v,
+        setter = v => v,
+        defaultValue,
+        defaultHelp
+    } = options;
 
-    class Controller extends PureComponent {
-        constructor(props) {
-            super(props);
+    class Controller extends Component {
+        constructor(props, context) {
+            super(props, context);
             // init the WrappedComponent with default value or with props
-            const value = (this.__last_report_value = this.getDefaultValue());
+            const initValue = this.getDefaultValue();
+            const initHelp = this.getDefaultHelp();
             this.state = {
-                value: value
+                value: initValue
             };
+            const { field } = props;
+            if (field === undefined) {
+                console.error('The controller need a unique field in the form');
+            }
+            const { form, addTrackingField } = context;
+            if (form === undefined) {
+                console.error('The controller must place into a form');
+            }
+            const { dispatcher } = form;
+            this.dispatcher = dispatcher;
+            if (addTrackingField) {
+                addTrackingField(field);
+            }
+            dispatcher.dispatch(EVENTS.CONTROLLER_INIT, field, initValue, initHelp);
+            dispatcher.addListener(`${field}-${EVENTS.CONTROLLER_SET_VALUE}`, this.setValue);
         }
         static propTypes = {
-            name: PropTypes.string.isRequired,
+            field: PropTypes.string.isRequired,
             controllerOptions: PropTypes.object
         };
         static defaultProps = {
             controllerOptions: {}
         };
+        static contextTypes = {
+            form: PropTypes.object.isRequired,
+            addTrackingField: PropTypes.func
+        };
 
         componentDidMount() {
-            if (!this.context.isInForm) {
-                console.error(`The controller need to place in a valid form`);
-            }
-            if (!this.name) {
-                console.error('The controller need a unique name in the form');
-            }
-            // hack when the init value of WrappedComponent is not correct
+            // hack when the init value of WrappedComponent is not correct, this will trigger form's onChange handle
             if (this.innerRef && this.innerRef.getInitValue) {
-                let initValue = this.innerRef.getInitValue();
-                this.value = initValue;
+                const initValue = this.innerRef.getInitValue();
+                this.setValue(initValue);
             }
-            // tell form to tracking this controller
-            this.context.addTrackingController(this.name, this);
         }
         componentWillUnmount() {
-            this.context.removeTrackingController(this.name);
+            const field = this.getField();
+            this.dispatcher.dispatch(EVENTS.CONTROLLER_DESTORY, field);
         }
 
         getDefaultValue = () => {
-            let __defaultValue = defaultValue;
+            let _defaultValue = defaultValue;
             const { controllerOptions } = this.props;
             if (Object.hasOwnProperty.call(controllerOptions, ['defaultValue'])) {
-                __defaultValue = controllerOptions.defaultValue;
+                _defaultValue = controllerOptions.defaultValue;
             }
-            return __defaultValue;
+            return _defaultValue;
         };
+        getDefaultHelp = () => {
+            let _defaultHelp = defaultHelp;
+            const { controllerOptions } = this.props;
+            if (Object.hasOwnProperty.call(controllerOptions, ['defaultHelp'])) {
+                _defaultHelp = controllerOptions.defaultHelp;
+            }
+            return _defaultHelp;
+        };
+        getValue = () => this.state.value;
+        _setValue = (value, callback) => {
+            this.setState(
+                {
+                    value
+                },
+                callback
+            );
+        };
+        setValue = v => {
+            this._setValue(v, () => this.handleChange(v));
+        };
+        resetValue = () => this.setValue(this.getDefaultValue());
 
-        get value() {
-            return this.state.value;
-        }
-        getValue = () => this.value;
-        set value(value) {
-            this.setState({
-                value: value
-            });
-        }
-        setValue = v => (this.value = v);
-        resetValue = () => (this.value = this.getDefaultValue());
-        get name() {
-            return this.props.name;
-        }
-        getName = () => this.name;
+        getField = () => this.props.field;
 
-        handleChange = debounce(value => {
-            this.context.onControllerChange(this.name, value, this.__last_report_value);
-            this.__last_report_value = value;
-        }, 200);
+        handleChange = value => {
+            const field = this.getField();
+            this.dispatcher.dispatch(EVENTS.CONTROLLER_DIRTY, field);
+            this.dispatcher.dispatch(EVENTS.CONTROLLER_CHANGE, field, value);
+        };
         onChange = (...args) => {
             const { controllerOptions } = this.props;
-            let __getter = getter;
+            let _getter = getter;
             if (isFunction(controllerOptions.getter)) {
-                __getter = (...args) => controllerOptions.getter(getter(...args));
+                _getter = (...args) => controllerOptions.getter(getter(...args));
             }
-            const value = __getter(...args);
-            this.value = value;
-            this.handleChange(value);
-        };
-
-        check = () => {
-            this.context.checkController(this.name);
+            const value = _getter(...args);
+            this.setValue(value);
         };
 
         render() {
-            const { controllerOptions, ...rest } = this.props;
-            let __setter = setter;
+            // eslint-disable-next-line no-unused-vars
+            const { field, controllerOptions, ...rest } = this.props;
+            const { form } = this.context;
+            let _setter = setter;
             if (isFunction(controllerOptions.setter)) {
-                __setter = (...args) => controllerOptions.setter(setter(...args));
+                _setter = (...args) => controllerOptions.setter(setter(...args));
             }
             return (
                 <WrappedComponent
                     {...rest}
                     {...{
-                        [bindValue]: __setter(this.state.value),
+                        [bindValue]: _setter(this.getValue()),
                         [bindChange]: this.onChange
                     }}
+                    field={this.getField()}
+                    form={form}
                     ref={_ref => (this.innerRef = _ref)}
                 />
             );
         }
     }
-
-    Controller.contextTypes = {
-        isInForm: PropTypes.bool,
-        addTrackingController: PropTypes.func,
-        removeTrackingController: PropTypes.func,
-        onControllerChange: PropTypes.func,
-        checkController: PropTypes.func
-    };
 
     return Controller;
 }

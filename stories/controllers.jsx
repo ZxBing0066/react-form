@@ -1,9 +1,16 @@
 import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 
 import controllerHoc from '../src/controller-hoc.jsx';
 
-let Input = props => {
-    return <input {...props} />;
+let Input = ({ field, form, ...rest }) => {
+    return (
+        <input {...rest} style={{ background: form.isFieldDirty(field) && !form.isFieldValid(field) ? 'red' : '' }} />
+    );
+};
+Input.propTypes = {
+    field: PropTypes.string,
+    form: PropTypes.object
 };
 Input = controllerHoc(Input, { defaultValue: '', getter: e => e.target.value });
 
@@ -16,14 +23,27 @@ class SelectComponent extends PureComponent {
     };
 
     render() {
-        return <select {...this.props} ref={_ref => (this.ref = _ref)} />;
+        // eslint-disable-next-line no-unused-vars
+        const { field, form, ...rest } = this.props;
+        return <select {...rest} ref={_ref => (this.ref = _ref)} />;
     }
 }
+SelectComponent.propTypes = {
+    field: PropTypes.string.isRequired,
+    form: PropTypes.object.isRequired
+};
+
 let Select = controllerHoc(SelectComponent, { defaultValue: '', getter: e => e.target.value });
 
-let Checkbox = props => {
-    return <input type="checkbox" {...props} />;
+// eslint-disable-next-line no-unused-vars
+let Checkbox = ({ field, form, ...rest }) => {
+    return <input type="checkbox" {...rest} />;
 };
+Checkbox.propTypes = {
+    field: PropTypes.string.isRequired,
+    form: PropTypes.object.isRequired
+};
+
 Checkbox = controllerHoc(Checkbox, { bindValue: 'checked', defaultValue: false, getter: e => e.target.checked });
 
 let IPInput = props => {

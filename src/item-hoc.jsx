@@ -1,59 +1,47 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import map from 'lodash/map';
+import { EVENTS } from './dispatcher';
 
-function hoc(WrapperComponent) {
-    class Item extends PureComponent {
-        constructor(...args) {
-            super(...args);
-            this.state = {
-                help: {}
-            };
+function hoc(WrappedComponent) {
+    class Item extends Component {
+        constructor(props, context) {
+            super(props, context);
+
+            const { form } = context;
+            if (form === undefined) {
+                console.error('The item must place into a form');
+            }
+            const { dispatcher } = form;
+            this.dispatcher = dispatcher;
+            dispatcher.addListener(EVENTS.CONTROLLER_DESTORY, this.removeTrackingField);
         }
-
+        static contextTypes = {
+            form: PropTypes.object.isRequired
+        };
+        static childContextTypes = {
+            addTrackingField: PropTypes.func
+        };
         getChildContext() {
             return {
-                addTrackingController: this.addTrackingController
+                addTrackingField: this.addTrackingField
             };
         }
-
-        addTrackingController = (name, ref) => {
-            this.context.isInForm && this.context.addTrackingController(name, ref, this);
+        childFieldMap = {};
+        addTrackingField = field => {
+            this.childFieldMap[field] = true;
         };
-
-        setHelp = (name, helpForName) => {
-            const { help } = this.state;
-            if (Object.hasOwnProperty.call(help, name) && help[name] === helpForName) return;
-            this.setState({
-                help: {
-                    ...help,
-                    [name]: helpForName
-                }
-            });
+        removeTrackingField = field => {
+            delete this.childFieldMap[field];
         };
-        removeHelp = name => {
-            const { help } = this.state;
-            if (!Object.hasOwnProperty.call(help, name)) return;
-            delete help[name];
-            this.setState({
-                help: {
-                    ...help
-                }
-            });
+        getChildrenField = () => {
+            return map(this.childFieldMap, (v, field) => field);
         };
-
         render() {
-            return <WrapperComponent help={this.state.help} {...this.props} />;
+            const { form } = this.context;
+            return <WrappedComponent childrenField={this.getChildrenField()} form={form} {...this.props} />;
         }
     }
-
-    Item.childContextTypes = {
-        addTrackingController: PropTypes.func
-    };
-
-    Item.contextTypes = {
-        isInForm: PropTypes.bool,
-        addTrackingController: PropTypes.func
-    };
 
     return Item;
 }

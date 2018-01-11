@@ -2,245 +2,194 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import each from 'lodash/each';
-import isObject from 'lodash/isObject';
 import isFunction from 'lodash/isFunction';
-import findKey from 'lodash/findKey';
-import mapValues from 'lodash/mapValues';
+import uniqueId from 'lodash/uniqueId';
+import debounce from 'lodash/debounce';
+
+import { createDispatcher, EVENTS } from './dispatcher';
 
 function hoc(WrapperComponent, options = {}) {
-    let validCheckValue = true;
+    let validCheckValue = undefined;
     if (Object.hasOwnProperty.call(options, 'validCheckValue')) {
         validCheckValue = options.validCheckValue;
     }
+    const { debounceWait = 200 } = options;
+
+    const propTypes = {
+        defaultFormData: PropTypes.object, // default form data
+        defaultHelpMap: PropTypes.object, // a map of default help info
+        checkMap: PropTypes.object, // a map of check funs
+        autoCheck: PropTypes.bool, // auto check all the form
+        onChange: PropTypes.func, // call when the form changed
+        onSubmit: PropTypes.func
+    };
+
     class Form extends PureComponent {
-        controllerRefs = {};
-        __formData = {};
-        static propTypes = {
-            defaultFormData: PropTypes.object, // default form data
-            checkMap: PropTypes.object, // a map of check funs
-            defaultHelpMap: PropTypes.object, // a map of default help info
-            autoCheck: PropTypes.bool, // auto check all the form
-            autoCheckController: PropTypes.bool, // auto check the controller which are editing
-            onChange: PropTypes.func, // call when the form changed
-            name: PropTypes.string,
-            onOtherFormChange: PropTypes.func
-        };
+        constructor(...props) {
+            super(...props);
+            const { form } = this;
+            const { dataStore, dirtyMap, helpMap } = form;
+            const dispatcher = (this.dispatcher = form.dispatcher = createDispatcher(form.key));
+
+            dispatcher.addListener(EVENTS.CONTROLLER_INIT, (field, initValue, initHelp) => {
+                dataStore[field] = initValue;
+                helpMap[field] = initHelp;
+                dirtyMap[field] = false;
+                this.handleChange();
+            });
+            dispatcher.addListener(EVENTS.CONTROLLER_DESTORY, field => {
+                delete dataStore[field];
+                delete helpMap[field];
+                delete dirtyMap[field];
+                this.handleChange();
+            });
+            dispatcher.addListener(EVENTS.CONTROLLER_DIRTY, field => {
+                dirtyMap[field] = true;
+                this.handleChange();
+            });
+            dispatcher.addListener(EVENTS.CONTROLLER_CHANGE, (field, value) => {
+                dataStore[field] = value;
+                this.handleChange();
+            });
+        }
+        static propTypes = propTypes;
         static defaultProps = {
             defaultFormData: {},
-            checkMap: {},
             defaultHelpMap: {},
-            onChange: () => {},
+            checkMap: {},
             autoCheck: false,
-            autoCheckController: false,
-            onOtherFormChange: () => {}
+            onChange: () => {},
+            onSubmit: () => {}
         };
 
         static childContextTypes = {
-            isInForm: PropTypes.bool,
-            addTrackingController: PropTypes.func,
-            removeTrackingController: PropTypes.func,
-            onControllerChange: PropTypes.func,
-            checkController: PropTypes.func
+            form: PropTypes.object
         };
         getChildContext() {
             return {
-                isInForm: true,
-                addTrackingController: this.addTrackingController,
-                removeTrackingController: this.removeTrackingController,
-                onControllerChange: this.onControllerChange,
-                checkController: this.checkController
+                form: this.form
             };
         }
 
-        static contextTypes = {
-            isInFormGroup: PropTypes.bool,
-            onFormChange: PropTypes.func,
-            addTrackingForm: PropTypes.func,
-            removeTrackingForm: PropTypes.func,
-            getFormData: PropTypes.func
+        form = {
+            key: uniqueId('form_store_'),
+            dispatcher: null,
+            dataStore: {},
+            dirtyMap: {},
+            helpMap: {},
+            getFieldHelp: field => {
+                return this.form.helpMap[field];
+            },
+            getFieldValue: field => {
+                return this.form.dataStore[field];
+            },
+            isFieldValid: field => {
+                const help = this.form.getFieldHelp(field);
+                if (help === undefined) return true;
+                let isValid = false;
+                if (isFunction(validCheckValue)) {
+                    isValid = validCheckValue(help);
+                } else if (help === validCheckValue) {
+                    isValid = true;
+                }
+                return isValid;
+            },
+            isFieldDirty: field => {
+                return this.form.dirtyMap[field];
+            },
+            isValid: () => {
+                for (let field in this.form.dataStore) {
+                    if (!this.form.isFieldValid(field)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
         };
 
         componentDidMount = () => {
-            if (this.context.isInFormGroup) {
-                this.context.addTrackingForm(this.props.name, this);
-            }
+            this._oldFormData = this.getFormData();
+            this.setFormData(this.props.defaultFormData);
+            this.setHelpMap(this.props.defaultHelpMap);
         };
         componentWillUnmount = () => {
-            // clear the refs
-            this.controllerRefs = {};
-            if (this.context.isInFormGroup) {
-                this.context.removeTrackingForm(this.props.name, this);
+            this.dispatcher.destory();
+        };
+        componentWillReceiveProps = nextProps => {
+            if (!this.shallowCompareProps(this.props, nextProps)) {
+                this.handleChange();
             }
         };
+        shouldComponentUpdate = () => {
+            return false;
+        };
 
-        // tell form to tracking this controller
-        addTrackingController = (name, ref, itemRef) => {
-            if (this.controllerRefs[name]) {
-                console.error(
-                    `There is repeat controller name in this form, please check: repeated controller name is ${name}, this controller will not be tracking`
-                );
-            } else {
-                this.controllerRefs[name] = {
-                    ref,
-                    itemRef
-                };
-                // init the controller with defaultFormData
-                let defaultFormData = this.props.defaultFormData;
-                if (defaultFormData.hasOwnProperty(name)) {
-                    ref.setValue(defaultFormData[name]);
-                }
-                // init the help with defaultHelpMap
-                let defaultHelpMap = this.props.defaultHelpMap;
-
-                if (defaultHelpMap.hasOwnProperty(name)) {
-                    itemRef && itemRef.setHelp(name, defaultHelpMap[name]);
+        shallowCompareProps = (props, nextProps) => {
+            for (let propKey in propTypes) {
+                if (props[propKey] !== nextProps[propKey]) {
+                    return false;
                 }
             }
+            return true;
         };
 
-        // remove the controller tracking
-        removeTrackingController = name => {
-            delete this.controllerRefs[name];
+        getFormData = () => ({
+            ...this.form.dataStore
+        });
+        setFormData = formData => {
+            each(formData, (value, field) => {
+                this.dispatcher.dispatch(`${field}-${EVENTS.CONTROLLER_SET_VALUE}`, value);
+            });
+        };
+        getHelpMap = () => ({ ...this.form.helpMap });
+        setHelpMap = helpMap => {
+            each(helpMap, (help, field) => {
+                this.form.helpMap[field] = help;
+            });
         };
 
-        // the controller changed
-        onControllerChange = (name, value) => {
-            if (!this.controllerRefs[name]) {
-                console.error(`There is no controller named ${name} in this form`);
-                return;
-            }
-            let oldFormData = this.__formData;
+        isValid = () => this.form.isValid();
 
-            if (this.props.autoCheck) {
-                // auto check all controller
-                this.check();
-            } else if (this.props.autoCheckController) {
-                // auto check the changed controller
-                this.checkController(name);
-            }
-            let newFormData = this.formData;
-            this.props.onChange && this.props.onChange(name, value, newFormData, oldFormData);
-            if (this.context.isInFormGroup && this.props.name) {
-                this.context.onFormChange(this.props.name, newFormData, oldFormData);
-            }
-        };
+        handleChange = debounce(() => {
+            this.check();
+            const formData = this.getFormData();
+            this.props.onChange(formData, this._oldFormData, this.form.isValid());
+            this._oldFormData = formData;
+            this.forceUpdate();
+        }, debounceWait);
 
-        onOtherFormChange = (...args) => {
-            this.props.onOtherFormChange(...args);
-        };
-
-        get formData() {
-            let formData = {};
-            each(this.controllerRefs, ({ ref }) => (formData[ref.name] = ref.getValue()));
-            this.__formData = formData;
-            return formData;
-        }
-
-        getFormData() {
-            return this.formData;
-        }
-
-        getOtherFormData(formName) {
-            if (this.context.isInFormGroup) {
-                return this.context.getFormData(formName);
-            } else {
-                console.warn("The form is not in a form group, so it can't get other form's data");
-            }
-        }
-
-        set formData(formData) {
-            each(this.controllerRefs, ({ ref }, name) => {
-                if (Object.hasOwnProperty.call(formData, name)) {
-                    ref.setValue(formData[name]);
+        check = () => {
+            const { checkMap } = this.props;
+            const { helpMap } = this.form;
+            const formData = this.getFormData();
+            each(checkMap, (check, field) => {
+                if (isFunction(check)) {
+                    helpMap[field] = check(formData[field], { ...formData });
                 } else {
-                    ref.resetValue();
+                    console.warn(`The check function for field ${field} is not a function`);
                 }
             });
-            if (this.props.autoCheck) {
-                this.check();
-            }
-            this.__formData = formData;
-        }
-
-        setFormData = formData => {
-            this.formData = formData;
         };
 
-        // get the value of controller
-        getControllerValue = name => {
-            if (!this.controllerRefs[name]) {
-                console.error(`There is no controller named ${name} in this form`);
-                return undefined;
-            }
-            return this.controllerRefs[name].ref.getValue();
+        forceCheckAll = () => {
+            const { dirtyMap } = this.form;
+            each(dirtyMap, (dirty, field) => {
+                dirtyMap[field] = true;
+            });
+            this.handleChange();
         };
 
-        // check all controllers and return the result of check
-        check() {
-            // cache
-            let currentFormData = this.formData;
-            let checkResultMap = mapValues(this.controllerRefs, (ref, name) =>
-                this.checkController(name, currentFormData)
-            );
-            return checkResultMap;
-        }
-
-        // check the controller value
-        checkController = (name, currentFormData) => {
-            const { checkMap } = this.props;
-            let result = (() => {
-                // no valid check map
-                if (!isObject(checkMap)) return validCheckValue;
-                const check = checkMap[name];
-                // no valid check for this controller
-                if (check === undefined) return validCheckValue;
-                // this controller's check is not a valid fun
-                if (!isFunction(check)) {
-                    console.warn(`The check method of ${name} is not a function`);
-                    return validCheckValue;
-                }
-                if (!currentFormData) {
-                    currentFormData = this.formData;
-                }
-                let value = this.getControllerValue(name);
-                // get the check result
-                return check(value, currentFormData);
-            })();
-            let itemRef = this.controllerRefs[name].itemRef;
-            // if in item
-            if (itemRef) {
-                if (result === validCheckValue) {
-                    itemRef.removeHelp(name);
-                } else {
-                    itemRef.setHelp(name, result);
-                }
-            }
-            return result;
+        handleSubmit = e => {
+            this.forceCheckAll();
+            this.props.onSubmit(this.getFormData(), this.isValid());
+            e.preventDefault();
         };
-
-        // 表单是否有效
-        get isValid() {
-            let checkResultMap = this.check();
-            return !findKey(checkResultMap, result => result !== validCheckValue);
-        }
-        getIsValid() {
-            return this.isValid;
-        }
 
         render() {
-            let {
-                defaultFormData,
-                checkMap,
-                defaultHelpMap,
-                autoCheck,
-                autoCheckController,
-                onChange,
-                name,
-                onOtherFormChange,
-                ...rest
-            } = this.props;
-
-            return <WrapperComponent {...rest} onChange={() => {}} />;
+            /* eslint-disable no-unused-vars */
+            const { defaultFormData, checkMap, defaultHelpMap, autoCheck, onChange, onSubmit, ...rest } = this.props;
+            /* eslint-enable no-unused-vars */
+            return <WrapperComponent {...rest} onChange={() => {}} onSubmit={this.handleSubmit} />;
         }
     }
     return Form;

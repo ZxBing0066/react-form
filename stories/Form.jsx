@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { formHoc, itemHoc } from '../index';
+import { formHoc, itemHoc } from 'react-form';
 import { map, isObject, isEmpty } from 'lodash';
 
 let Form = props => {
@@ -8,12 +8,21 @@ let Form = props => {
 };
 Form = formHoc(Form);
 
-let Item = ({ label, children, help, ...rest }) => {
+let Item = ({ label, children, childrenField, form, ...rest }) => {
     return (
         <div {...rest}>
-            <label>{label}</label>
-            {children}
-            <Help help={help} />
+            <div>
+                <label>{label}</label>
+                {children}
+            </div>
+            <Help
+                help={map(childrenField, field => ({
+                    field,
+                    isDirty: form.isFieldDirty(field),
+                    isValid: form.isFieldValid(field),
+                    help: form.getFieldHelp(field)
+                }))}
+            />
         </div>
     );
 };
@@ -21,12 +30,13 @@ let Item = ({ label, children, help, ...rest }) => {
 Item.propTypes = {
     label: PropTypes.node,
     children: PropTypes.node,
-    help: PropTypes.object
+    childrenField: PropTypes.array.isRequired,
+    form: PropTypes.object.isRequired
 };
 
 Item = itemHoc(Item);
 
-let Help = ({ help = {}, display = 'inline-block' }) => {
+let Help = ({ help = [], display = 'inline-block' }) => {
     if (isEmpty(help)) {
         return null;
     }
@@ -34,12 +44,17 @@ let Help = ({ help = {}, display = 'inline-block' }) => {
         <div className="help-wrapper" style={{ display }}>
             {map(help, (info, name) => {
                 let message;
-                let color = 'red';
-                if (isObject(info)) {
+                let color = 'black';
+                if (!info.isDirty) {
+                    return null;
+                } else if (isObject(info.help)) {
                     message = info.message;
                     color = info.color;
                 } else {
-                    message = info;
+                    message = info.help;
+                }
+                if (!info.isValid) {
+                    color = 'red';
                 }
                 const style = {
                     color
@@ -54,7 +69,7 @@ let Help = ({ help = {}, display = 'inline-block' }) => {
     );
 };
 Help.propTypes = {
-    help: PropTypes.object,
+    help: PropTypes.array,
     display: PropTypes.string
 };
 
