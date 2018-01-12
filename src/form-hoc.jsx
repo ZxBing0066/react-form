@@ -13,7 +13,7 @@ function hoc(WrapperComponent, options = {}) {
     if (Object.hasOwnProperty.call(options, 'validCheckValue')) {
         validCheckValue = options.validCheckValue;
     }
-    const { debounceWait = 200 } = options;
+    const { debounceWait = 120 } = options;
 
     const propTypes = {
         defaultFormData: PropTypes.object, // default form data

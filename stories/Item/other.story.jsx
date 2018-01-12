@@ -2,7 +2,7 @@ import React from 'react';
 import Form, { Item } from '../Form';
 import { Input } from '../controllers';
 
-const simple = () => {
+const other = () => {
     return (
         <Form
             onChange={console.log.bind(console)}
@@ -22,4 +22,4 @@ const simple = () => {
     );
 };
 
-export default simple;
+export default other;
