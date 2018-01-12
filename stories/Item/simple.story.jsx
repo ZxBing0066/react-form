@@ -26,7 +26,7 @@ const simple = () => {
                 console.log('onChange', formData, oldFormData, isValid);
             }}
             onSubmit={(formData, isValid) => {
-                console.log(formData, isValid);
+                console.log('onSubmit', formData, isValid);
             }}
         >
             <Item label="one_input">

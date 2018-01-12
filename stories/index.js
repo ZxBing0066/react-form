@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { storiesOf, setAddon } from '@storybook/react';
-import { withInfo } from '@storybook/addon-info';
-import { withKnobs, text, boolean, number, object } from '@storybook/addon-knobs';
-import { withReadme, withDocs } from 'storybook-readme';
+import { storiesOf } from '@storybook/react';
+import { withReadme } from 'storybook-readme';
+import { withConsole } from '@storybook/addon-console';
 
 import each from 'lodash/each';
 
@@ -11,13 +10,15 @@ import { getStoryFilename } from './utils/index';
 
 import './style.css';
 
-storiesOf('Welcome', module).add('to Storybook', () => (
-    <div>
-        <h1>React form storybook</h1>
-        <p>Hi there, thanks for using react form.</p>
-        <p>Just jump to the demos</p>
-    </div>
-));
+storiesOf('Welcome', module)
+    .addDecorator((storyFn, context) => withConsole()(storyFn)(context))
+    .add('to Storybook', () => (
+        <div>
+            <h1>React form storybook</h1>
+            <p>Hi there, thanks for using react form.</p>
+            <p>Just jump to the demos</p>
+        </div>
+    ));
 
 const context = require.context('.', true, /.*\/.*\/.*\.story\.jsx$/);
 
