@@ -11,7 +11,7 @@ const path = require('path');
 module.exports = {
     resolve: {
         alias: {
-            'react-form': path.resolve(__dirname, '../index.jsx')
+            'z-react-form': path.resolve(__dirname, '../index.jsx')
         }
     },
     plugins: [],

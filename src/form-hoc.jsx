@@ -32,6 +32,10 @@ function hoc(WrapperComponent, options = {}) {
             const dispatcher = (this.dispatcher = form.dispatcher = createDispatcher(form.key));
 
             dispatcher.addListener(EVENTS.CONTROLLER_INIT, (field, initValue, initHelp) => {
+                if (Object.hasOwnProperty.call(dataStore, field)) {
+                    console.error(`The controller field named ${field} is existed`);
+                    return;
+                }
                 dataStore[field] = initValue;
                 helpMap[field] = initHelp;
                 dirtyMap[field] = false;
@@ -150,11 +154,13 @@ function hoc(WrapperComponent, options = {}) {
 
         isValid = () => this.form.isValid();
 
-        handleChange = debounce(() => {
+        handleChange = debounce((callOnChange = true) => {
             this.check();
-            const formData = this.getFormData();
-            this.props.onChange(formData, this._oldFormData, this.form.isValid());
-            this._oldFormData = formData;
+            if (callOnChange) {
+                const formData = this.getFormData();
+                this.props.onChange(formData, this._oldFormData, this.form.isValid());
+                this._oldFormData = formData;
+            }
             this.forceUpdate();
         }, debounceWait);
 
@@ -171,16 +177,12 @@ function hoc(WrapperComponent, options = {}) {
             });
         };
 
-        forceCheckAll = () => {
+        handleSubmit = e => {
             const { dirtyMap } = this.form;
             each(dirtyMap, (dirty, field) => {
                 dirtyMap[field] = true;
             });
-            this.handleChange();
-        };
-
-        handleSubmit = e => {
-            this.forceCheckAll();
+            this.forceUpdate();
             this.props.onSubmit(this.getFormData(), this.isValid());
             e.preventDefault();
         };

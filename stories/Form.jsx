@@ -1,12 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { formHoc, itemHoc } from 'react-form';
+import { formWrapper, itemWrapper } from 'z-react-form';
 import { map, isObject, isEmpty } from 'lodash';
 
 let Form = props => {
     return <form {...props} />;
 };
-Form = formHoc(Form);
+Form = formWrapper(Form);
 
 let Item = ({ label, children, childrenField, form, ...rest }) => {
     return (
@@ -34,7 +34,7 @@ Item.propTypes = {
     form: PropTypes.object.isRequired
 };
 
-Item = itemHoc(Item);
+Item = itemWrapper(Item);
 
 let Help = ({ help = [], display = 'inline-block' }) => {
     if (isEmpty(help)) {

@@ -9,7 +9,7 @@ setAddon(infoAddon);
 setOptions({
     name: 'Z-React-Form StoryBook',
     url: '',
-    downPanelInRight: true,
+    downPanelInRight: false,
     selectedAddonPanel: 'REACT_STORYBOOK/readme/panel'
 });
 

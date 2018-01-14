@@ -34,7 +34,6 @@ export class FormSample extends Component {
     };
 
     submit = () => {
-        this.form.forceCheckAll();
         console.log(this.form.getFormData(), this.form.isValid());
     };
 

@@ -35,11 +35,11 @@ keys.forEach(key => {
 });
 
 each(allStories, (stories, folder) => {
-    each(stories, (story, name) => {
+    each(stories, (Story, name) => {
         let _stories = storiesOf(folder, module);
         const code = require(`!raw-loader!./${folder}/${name}.story.jsx`);
 
         const docs = `## source code\n\`\`\`jsx\n${code}\n\`\`\``;
-        _stories.addDecorator(withReadme(docs)).add(name, story);
+        _stories.addDecorator(withReadme(docs)).add(name, () => <Story />);
     });
 });
