@@ -1,5 +1,8 @@
 import React from 'react';
-import Form, { Item } from '../Form';
+import PropTypes from 'prop-types';
+import { itemWrapper } from 'z-react-form';
+import map from 'lodash/map';
+import Form, { Help } from '../Form';
 import { Input } from '../controllers';
 
 const inputCheck = v => {
@@ -18,6 +21,34 @@ const checkMap = {
     input_2: inputCheck
 };
 
+let ItemWithChildrenField = ({ label, children, childrenField, form, ...rest }) => {
+    return (
+        <div {...rest}>
+            <div>
+                <label>{label}</label>
+                {children}
+            </div>
+            <Help
+                help={map(childrenField, field => ({
+                    field,
+                    isDirty: form.isFieldDirty(field),
+                    isValid: form.isFieldValid(field),
+                    help: form.getFieldHelp(field)
+                }))}
+            />
+        </div>
+    );
+};
+
+ItemWithChildrenField.propTypes = {
+    label: PropTypes.node,
+    children: PropTypes.node,
+    childrenField: PropTypes.array.isRequired,
+    form: PropTypes.object.isRequired
+};
+
+ItemWithChildrenField = itemWrapper(ItemWithChildrenField);
+
 const simple = () => {
     return (
         <Form
@@ -29,13 +60,13 @@ const simple = () => {
                 console.log('onSubmit', formData, isValid);
             }}
         >
-            <Item label="one_input">
+            <ItemWithChildrenField label="one_input">
                 <Input field="input" />
-            </Item>
-            <Item label="two input">
+            </ItemWithChildrenField>
+            <ItemWithChildrenField label="two input">
                 <Input field="input_1" />
                 <Input field="input_2" />
-            </Item>
+            </ItemWithChildrenField>
             <button type="submit">submit form data</button>
         </Form>
     );

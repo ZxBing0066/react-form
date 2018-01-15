@@ -59,6 +59,9 @@ let Help = ({ help = [], display = 'inline-block' }) => {
                 const style = {
                     color
                 };
+                if (!message) {
+                    return null;
+                }
                 return (
                     <p key={name} style={style}>
                         {name}: {message}
@@ -74,4 +77,4 @@ Help.propTypes = {
 };
 
 export default Form;
-export { Item };
+export { Item, Help };
